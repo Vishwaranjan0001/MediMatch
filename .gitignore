@@ -1,0 +1,16 @@
+# Maven
+**/target/
+*.log
+*.class
+*.jar
+*.war
+*.ear
+*.iml
+*.ipr
+*.iws
+.idea/
+*.classpath
+*.project
+*.settings/
+.DS_Store
+Thumbs.db

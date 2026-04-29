@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MediMatch — Blood Donation Matching</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav>
+  <a class="logo" href="#">🩸 MediMatch</a>
+  <div class="nav-links">
+    <a href="#how">How it works</a>
+    <a href="#about">About</a>
+    <button class="btn-ghost" onclick="showTab('login')">Log in</button>
+    <button class="btn-primary" onclick="showTab('signup')">Get started</button>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="hero-content">
+    <span class="badge">🚨 Real-time emergency matching</span>
+    <h1>Connect Blood<br><span>Donors to Lives</span></h1>
+    <p>MediMatch uses location, blood compatibility, and priority queues to connect patients with the right donors — instantly.</p>
+    <div class="hero-actions">
+      <button class="btn-primary btn-lg" onclick="showTab('signup')">Register now</button>
+      <button class="btn-outline btn-lg" onclick="showTab('login')">I have an account</button>
+    </div>
+    <div class="hero-stats">
+      <div class="stat"><span id="stat-donors">—</span><label>Donors</label></div>
+      <div class="stat"><span id="stat-requests">—</span><label>Open Requests</label></div>
+      <div class="stat"><span id="stat-hospitals">—</span><label>Hospitals</label></div>
+    </div>
+  </div>
+  <div class="hero-visual">
+    <div class="pulse-ring"></div>
+    <div class="hero-card card-1">
+      <div class="hc-icon">🩸</div>
+      <div>
+        <div class="hc-title">Emergency Alert</div>
+        <div class="hc-sub">O+ needed · 1.2 km away</div>
+      </div>
+      <span class="hc-badge urgent">URGENT</span>
+    </div>
+    <div class="hero-card card-2">
+      <div class="hc-icon">✅</div>
+      <div>
+        <div class="hc-title">Donor Matched</div>
+        <div class="hc-sub">A+ · 3 units · Confirmed</div>
+      </div>
+    </div>
+    <div class="hero-card card-3">
+      <div class="hc-icon">🏥</div>
+      <div>
+        <div class="hc-title">City Hospital</div>
+        <div class="hc-sub">Blood bank available</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="how" class="steps">
+  <h2>How MediMatch Works</h2>
+  <p class="section-sub">From request to donation in minutes</p>
+  <div class="steps-grid">
+    <div class="step-card">
+      <div class="step-num">01</div>
+      <h3>Post a Request</h3>
+      <p>Receivers post blood needs with urgency level, blood group, and location. Emergency requests trigger instant alerts.</p>
+    </div>
+    <div class="step-card">
+      <div class="step-num">02</div>
+      <h3>Smart Matching</h3>
+      <p>Our engine scans compatible donors nearby using real-time location and blood compatibility matrices.</p>
+    </div>
+    <div class="step-card">
+      <div class="step-num">03</div>
+      <h3>Instant Alerts</h3>
+      <p>Emergency emails reach eligible donors within 50km. Donors see prioritized requests on their dashboard.</p>
+    </div>
+    <div class="step-card">
+      <div class="step-num">04</div>
+      <h3>Life Saved</h3>
+      <p>Donor confirms, donates, and marks the request fulfilled. Every donation is tracked.</p>
+    </div>
+  </div>
+</section>
+
+<section id="about" class="about">
+  <div class="about-inner">
+    <div class="about-text">
+      <h2>Why MediMatch?</h2>
+      <p>Blood shortages cost lives every day — not because donors don't exist, but because they can't be reached in time. MediMatch solves the coordination problem.</p>
+      <ul>
+        <li>🗺 Location-aware matching using Haversine distance</li>
+        <li>🧬 Full blood compatibility matrix (A, B, AB, O ± Rh)</li>
+        <li>⚡ Priority queue sorts requests by urgency automatically</li>
+        <li>📧 Email alerts to all compatible donors in the vicinity</li>
+        <li>🏥 Hospital inventory management built in</li>
+      </ul>
+    </div>
+    <div class="about-cards">
+      <div class="info-card">
+        <div class="info-icon">🩸</div>
+        <h4>For Donors</h4>
+        <p>Set your availability, see emergency requests nearby, and track your donations.</p>
+        <button onclick="showSignupType('donor')">Register as Donor</button>
+      </div>
+      <div class="info-card">
+        <div class="info-icon">🏥</div>
+        <h4>For Hospitals</h4>
+        <p>Manage blood inventory and get prioritized incoming request lists.</p>
+        <button onclick="showSignupType('hospital')">Register Organisation</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══ AUTH MODAL ══════════════════════════════════════════════════════════════ -->
+<div class="overlay hidden" id="overlay" onclick="closeModal()"></div>
+<div class="modal hidden" id="modal">
+  <button class="modal-close" onclick="closeModal()">✕</button>
+
+  <!-- LOGIN -->
+  <div id="pane-login">
+    <div class="modal-logo">🩸 MediMatch</div>
+    <h2>Welcome back</h2>
+    <p class="modal-sub">Log in to access your dashboard</p>
+    <div class="error hidden" id="login-err"></div>
+    <label>Email</label>
+    <input type="email" id="login-email" placeholder="you@example.com">
+    <label>Password</label>
+    <input type="password" id="login-password" placeholder="Your password">
+    <button class="btn-primary full" id="login-btn" onclick="doLogin()" style="margin-top:20px;">Log in</button>
+    <p class="switch">Don't have an account? <a href="#" onclick="showTab('signup')">Sign up</a></p>
+  </div>
+
+  <!-- SIGNUP STEP 1: CHOOSE TYPE -->
+  <div id="pane-signup-type" class="hidden">
+    <div class="modal-logo">🩸 MediMatch</div>
+    <h2>Create account</h2>
+    <p class="modal-sub">What best describes you?</p>
+    <div class="type-grid">
+      <div class="type-card" onclick="showSignupType('donor')">
+        <div class="type-icon">🩸</div>
+        <strong>Donor</strong>
+        <span>I want to donate blood</span>
+      </div>
+      <div class="type-card" onclick="showSignupType('receiver')">
+        <div class="type-icon">🏥</div>
+        <strong>Patient / Receiver</strong>
+        <span>I need blood</span>
+      </div>
+      <div class="type-card" onclick="showSignupType('hospital')">
+        <div class="type-icon">🏨</div>
+        <strong>Hospital</strong>
+        <span>Manage blood requests</span>
+      </div>
+    </div>
+    <p class="switch">Already registered? <a href="#" onclick="showTab('login')">Log in</a></p>
+  </div>
+
+  <!-- SIGNUP FORMS -->
+  <div id="pane-signup-form" class="hidden">
+    <button class="back-btn" onclick="showTab('signup')">← Back</button>
+    <div class="modal-logo">🩸 MediMatch</div>
+    <h2 id="form-title">Register</h2>
+    <div class="error hidden" id="signup-err"></div>
+    <div id="form-fields"></div>
+    <button class="btn-primary full" id="signup-btn" onclick="doSignup()">Create Account</button>
+  </div>
+</div>
+
+<div id="toast-area"></div>
+
+<script>
+const BASE = 'http://localhost:8080/api';
+let signupType = '';
+
+// ── Navigation ────────────────────────────────────────────────────────────────
+function showTab(tab) {
+  document.getElementById('overlay').classList.remove('hidden');
+  document.getElementById('modal').classList.remove('hidden');
+  document.getElementById('pane-login').classList.add('hidden');
+  document.getElementById('pane-signup-type').classList.add('hidden');
+  document.getElementById('pane-signup-form').classList.add('hidden');
+  if (tab === 'login') document.getElementById('pane-login').classList.remove('hidden');
+  else document.getElementById('pane-signup-type').classList.remove('hidden');
+}
+function closeModal() {
+  document.getElementById('overlay').classList.add('hidden');
+  document.getElementById('modal').classList.add('hidden');
+}
+function showSignupType(type) {
+  signupType = type;
+  document.getElementById('pane-signup-type').classList.add('hidden');
+  document.getElementById('pane-signup-form').classList.remove('hidden');
+  const titles = { donor:'Register as Donor', receiver:'Register as Receiver', hospital:'Register Hospital' };
+  document.getElementById('form-title').textContent = titles[type];
+  document.getElementById('form-fields').innerHTML = buildForm(type);
+  if (navigator.geolocation) navigator.geolocation.getCurrentPosition(pos => {
+    const latEl = document.getElementById('f-lat'), lngEl = document.getElementById('f-lng');
+    if (latEl) { latEl.value = pos.coords.latitude; lngEl.value = pos.coords.longitude; }
+  });
+}
+
+// ── Form templates ────────────────────────────────────────────────────────────
+function input(id, label, type='text', ph='') {
+  return `<div class="fgroup"><label>${label}</label><input type="${type}" id="${id}" placeholder="${ph}"></div>`;
+}
+function select(id, label, opts) {
+  return `<div class="fgroup"><label>${label}</label><select id="${id}"><option value="">Select...</option>${opts.map(o=>`<option>${o}</option>`).join('')}</select></div>`;
+}
+function row(...cols) { return `<div class="frow">${cols.join('')}</div>`; }
+const bloodGroups = ['A+','A-','B+','B-','AB+','AB-','O+','O-'];
+
+function buildForm(type) {
+  const common = row(input('f-name','Full Name','text','Your name'), input('f-email','Email','email','you@example.com'))
+    + row(input('f-password','Password','password','Min 8 chars'), input('f-phone','Phone','tel','+91 98XXXXXXXX'))
+    + row(input('f-city','City','text','City'), input('f-address','Address','text','Full address'))
+    + row(`<div class="fgroup"><label>Latitude</label><input type="number" id="f-lat" step="any" placeholder="Auto-detected"></div>`,
+          `<div class="fgroup"><label>Longitude</label><input type="number" id="f-lng" step="any" placeholder="Auto-detected"></div>`);
+
+  if (type === 'donor') return common
+    + row(select('f-blood','Blood Group', bloodGroups), select('f-gender','Gender',['Male','Female','Other']))
+    + row(input('f-age','Age','number','25'), input('f-weight','Weight (kg)','number','65'))
+    + input('f-conditions','Medical Conditions (optional)','text','e.g. None');
+
+  if (type === 'receiver') return common
+    + row(select('f-blood','Blood Group Required', bloodGroups), input('f-patient','Patient Name','text','Patient name'))
+    + input('f-hospital-name','Hospital Name','text','Hospital where blood is needed');
+
+  if (type === 'hospital') return common
+    + row(input('f-reg','Registration Number','text','HOSP-XXXX'), input('f-contact','Contact Person','text','Name'))
+    + row(select('f-htype','Hospital Type',['Government','Private','Trust']),input('f-beds','Bed Count','number','100'))
+    + row(`<div class="fgroup"><label>Blood Bank?</label><select id="f-bb"><option value="true">Yes</option><option value="false">No</option></select></div>`,
+          `<div class="fgroup"><label>Emergency Services?</label><select id="f-es"><option value="true">Yes</option><option value="false">No</option></select></div>`);
+
+  return '';
+}
+
+// ── API ───────────────────────────────────────────────────────────────────────
+async function api(method, path, body, token) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (token) headers['Authorization'] = 'Bearer ' + token;
+  const res = await fetch(BASE + path, { method, headers, body: body ? JSON.stringify(body) : undefined });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || data.message || 'Request failed');
+  return data;
+}
+
+function v(id) { return document.getElementById(id)?.value?.trim() || ''; }
+function showErr(id, msg) {
+  const el = document.getElementById(id);
+  el.textContent = msg; el.classList.remove('hidden');
+  setTimeout(() => el.classList.add('hidden'), 5000);
+}
+
+// ── Login ─────────────────────────────────────────────────────────────────────
+async function doLogin() {
+  const btn = document.getElementById('login-btn');
+  btn.textContent = 'Logging in…'; btn.disabled = true;
+  try {
+    const res = await api('POST', '/auth/login', { email: v('login-email'), password: v('login-password') }, null);
+    ['token','role','userId','name','email'].forEach(k => localStorage.setItem('mm_'+k, res[k]));
+    toast('Welcome back, ' + res.name + '!', 'success');
+    setTimeout(() => { window.location.href = dashboardFor(res.role); }, 700);
+  } catch(e) {
+    showErr('login-err', e.message);
+    btn.textContent = 'Log in'; btn.disabled = false;
+  }
+}
+
+// ── Signup ────────────────────────────────────────────────────────────────────
+async function doSignup() {
+  const btn = document.getElementById('signup-btn');
+  btn.textContent = 'Creating account…'; btn.disabled = true;
+  try {
+    const body = buildBody(signupType);
+    await api('POST', '/auth/signup/' + signupType, body, null);
+    toast('Account created! Logging you in…', 'success');
+    const res = await api('POST', '/auth/login', { email: body.email, password: body.rawPassword }, null);
+    ['token','role','userId','name','email'].forEach(k => localStorage.setItem('mm_'+k, res[k]));
+    setTimeout(() => { window.location.href = dashboardFor(res.role); }, 800);
+  } catch(e) {
+    showErr('signup-err', e.message);
+    btn.textContent = 'Create Account'; btn.disabled = false;
+  }
+}
+
+function buildBody(type) {
+  const raw = v('f-password');
+  const base = {
+    name: v('f-name'), email: v('f-email'), password: raw, rawPassword: raw,
+    phone: v('f-phone'), city: v('f-city'), address: v('f-address'),
+    latitude: parseFloat(v('f-lat')) || 30.3165,
+    longitude: parseFloat(v('f-lng')) || 78.0322
+  };
+  if (type === 'donor') return { ...base,
+    bloodGroup: v('f-blood'), gender: v('f-gender'),
+    age: parseInt(v('f-age')), weight: parseInt(v('f-weight')),
+    medicalConditions: v('f-conditions') };
+  if (type === 'receiver') return { ...base,
+    bloodGroupRequired: v('f-blood'), patientName: v('f-patient'),
+    hospitalName: v('f-hospital-name') };
+  if (type === 'hospital') return { ...base,
+    registrationNumber: v('f-reg'), contactPersonName: v('f-contact'),
+    hospitalType: v('f-htype'), bedCount: parseInt(v('f-beds')) || 0,
+    bloodBankAvailable: v('f-bb') === 'true', emergencyServices: v('f-es') === 'true' };
+
+}
+
+function dashboardFor(role) {
+  return { DONOR:'donor.html', RECEIVER:'receiver.html', HOSPITAL:'hospital.html' }[role] || 'index.html';
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+function toast(msg, type='info') {
+  const el = document.createElement('div');
+  el.className = 'toast toast-'+type;
+  el.textContent = msg;
+  document.getElementById('toast-area').appendChild(el);
+  setTimeout(() => { el.style.opacity = '0'; setTimeout(() => el.remove(), 400); }, 3500);
+}
+
+// ── Stats ─────────────────────────────────────────────────────────────────────
+fetch(BASE + '/public/stats').then(r => r.json()).then(d => {
+  document.getElementById('stat-donors').textContent    = d.donors || '—';
+  document.getElementById('stat-requests').textContent  = d.openRequests || '—';
+  document.getElementById('stat-hospitals').textContent = d.hospitals || '—';
+}).catch(() => {});
+
+// Redirect if already logged in
+const role = localStorage.getItem('mm_role');
+if (role) window.location.href = dashboardFor(role);
+</script>
+</body>
+</html>

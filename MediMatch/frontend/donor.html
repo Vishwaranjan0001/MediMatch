@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Donor Dashboard — MediMatch</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+</head>
+<body>
+
+<nav>
+  <a class="logo" href="index.html">🩸 MediMatch</a>
+  <div class="nav-links">
+    <span id="nav-name" style="color:#475569;font-size:.9rem;font-weight:500;padding:0 8px;"></span>
+    <button class="btn-ghost" onclick="logout()">Log out</button>
+  </div>
+</nav>
+
+<div class="dash-wrap">
+  <aside class="sidebar">
+    <div class="sidebar-logo">🩸 MediMatch</div>
+    <a class="sidebar-item active" onclick="showSection('overview')">
+      <span class="sidebar-icon">🏠</span> Overview
+    </a>
+    <a class="sidebar-item" onclick="showSection('requests')">
+      <span class="sidebar-icon">🩸</span> Blood Requests
+    </a>
+    <a class="sidebar-item" onclick="showSection('map')">
+      <span class="sidebar-icon">🗺</span> Nearby Map
+    </a>
+    <a class="sidebar-item" onclick="showSection('profile')">
+      <span class="sidebar-icon">👤</span> Profile
+    </a>
+    <div class="sidebar-bottom">
+      <a class="sidebar-item" onclick="logout()">
+        <span class="sidebar-icon">🚪</span> Log out
+      </a>
+    </div>
+  </aside>
+
+  <main class="main-content">
+
+    <!-- ── OVERVIEW ── -->
+    <div id="sec-overview">
+      <div class="page-header">
+        <div class="page-title">Welcome back, <span id="donor-name">—</span> 👋</div>
+        <div class="page-sub">Here's what's happening around you</div>
+      </div>
+
+      <div id="emergency-banner" class="emergency-banner hidden">
+        <div class="eb-icon">🚨</div>
+        <div class="eb-text">
+          <h3 id="eb-title">Emergency Nearby</h3>
+          <p id="eb-desc">Someone urgently needs your blood type</p>
+        </div>
+        <button class="eb-btn" onclick="showSection('requests')">View →</button>
+      </div>
+
+      <div class="avail-row">
+        <div>
+          <div class="avail-status">Availability</div>
+          <div style="font-size:.85rem;color:#475569;margin-top:2px;" id="avail-sub">Toggle to receive donation alerts</div>
+        </div>
+        <div class="toggle-switch" style="margin-left:auto;">
+          <div class="toggle" id="avail-toggle" onclick="toggleAvailability()"></div>
+          <span class="switch-label" id="avail-label">—</span>
+        </div>
+      </div>
+
+      <div class="stats-row">
+        <div class="card">
+          <div class="card-title">Blood Type</div>
+          <div class="card-value" id="stat-blood">—</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Total Donations</div>
+          <div class="card-value" id="stat-donations">0</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Open Requests</div>
+          <div class="card-value" id="stat-open">—</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Emergencies</div>
+          <div class="card-value" style="color:#DC2626" id="stat-emerg">—</div>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <div class="section-head">
+          <h3>Latest Requests for Your Blood Type</h3>
+          <button class="btn-ghost" style="font-size:.85rem;" onclick="showSection('requests')">See all →</button>
+        </div>
+        <div class="section-body" id="overview-requests">
+          <div class="empty"><div class="empty-icon">🔍</div>No requests yet</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── REQUESTS ── -->
+    <div id="sec-requests" class="hidden">
+      <div class="page-header">
+        <div class="page-title">Blood Requests</div>
+        <div class="page-sub">Sorted by urgency — emergencies always first</div>
+      </div>
+      <div class="filter-tabs">
+        <button class="filter-tab active" onclick="filterReqs('ALL', this)">All</button>
+        <button class="filter-tab" onclick="filterReqs('EMERGENCY', this)">🚨 Emergency</button>
+        <button class="filter-tab" onclick="filterReqs('URGENT', this)">⚡ Urgent</button>
+        <button class="filter-tab" onclick="filterReqs('NORMAL', this)">📋 Normal</button>
+      </div>
+      <div class="section-card">
+        <div class="section-body" id="requests-list">
+          <div class="empty"><div class="empty-icon">⏳</div>Loading…</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── MAP ── -->
+    <div id="sec-map" class="hidden">
+      <div class="page-header">
+        <div class="page-title">Nearby Locations</div>
+        <div class="page-sub">Hospitals and donation camps around you</div>
+      </div>
+      <div class="filter-tabs">
+        <button class="filter-tab active" onclick="filterMap('ALL', this)">All</button>
+        <button class="filter-tab" onclick="filterMap('HOSPITAL', this)">🏥 Hospitals</button>
+      </div>
+      <div class="grid-2" style="margin-bottom:20px;">
+        <div class="map-box" id="donor-map"></div>
+        <div class="section-card" style="max-height:400px;overflow-y:auto;">
+          <div class="section-body" id="location-list">
+            <div class="empty"><div class="empty-icon">📍</div>Loading locations…</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PROFILE ── -->
+    <div id="sec-profile" class="hidden">
+      <div class="page-header">
+        <div class="page-title">My Profile</div>
+      </div>
+      <div class="section-card">
+        <div class="section-body" id="profile-body">
+          <div class="empty"><div class="empty-icon">⏳</div>Loading…</div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<div id="toast-area"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const BASE = 'http://localhost:8080/api';
+const token = localStorage.getItem('mm_token');
+const userId = localStorage.getItem('mm_userId');
+if (!token || localStorage.getItem('mm_role') !== 'DONOR') { window.location.href = 'index.html'; }
+
+document.getElementById('nav-name').textContent = localStorage.getItem('mm_name') || '';
+document.getElementById('donor-name').textContent = (localStorage.getItem('mm_name') || '').split(' ')[0];
+
+let profile = null, allRequests = [], allLocations = [], map = null, markers = [];
+let userLat = 30.3165, userLng = 78.0322;
+
+async function api(path) {
+  const res = await fetch(BASE + path, { headers: { Authorization: 'Bearer ' + token } });
+  return res.json();
+}
+async function apiPatch(path, body) {
+  const res = await fetch(BASE + path, { method:'PATCH', headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'}, body:JSON.stringify(body) });
+  return res.json();
+}
+async function apiPost(path) {
+  const res = await fetch(BASE + path, { method:'POST', headers:{ Authorization: 'Bearer ' + token } });
+  return res.json();
+}
+
+function toast(msg, type='info') {
+  const el = document.createElement('div');
+  el.className = 'toast toast-'+type; el.textContent = msg;
+  document.getElementById('toast-area').appendChild(el);
+  setTimeout(() => { el.style.opacity='0'; setTimeout(()=>el.remove(),400); }, 3000);
+}
+
+// ── Sections ──────────────────────────────────────────────────────────────────
+function showSection(id) {
+  ['overview','requests','map','profile'].forEach(s => {
+    document.getElementById('sec-'+s).classList.toggle('hidden', s !== id);
+  });
+  document.querySelectorAll('.sidebar-item').forEach((el,i) => {
+    el.classList.toggle('active', ['overview','requests','map','profile'][i] === id);
+  });
+  if (id === 'map' && !map) initMap();
+  if (id === 'requests') renderRequests(allRequests);
+  if (id === 'profile') renderProfile();
+}
+
+// ── Load data ──────────────────────────────────────────────────────────────────
+async function loadAll() {
+  profile = await api('/donor/profile');
+  
+  // Use profile coordinates if available, fallback to defaults
+  if (profile?.latitude && profile?.longitude) {
+    userLat = profile.latitude;
+    userLng = profile.longitude;
+  }
+  
+  document.getElementById('stat-blood').textContent = profile.bloodGroup || '—';
+  document.getElementById('stat-donations').textContent = profile.totalDonations || 0;
+  setAvail(profile.isAvailable);
+
+  allRequests = await api('/donor/open-requests').catch(()=>[]) || [];
+  document.getElementById('stat-open').textContent = allRequests.length;
+
+  const emergencies = await api(`/donor/emergencies?lat=${userLat}&lng=${userLng}`).catch(()=>[]) || [];
+  document.getElementById('stat-emerg').textContent = emergencies.length;
+
+  if (emergencies.length > 0) {
+    const e = emergencies[0];
+    document.getElementById('emergency-banner').classList.remove('hidden');
+    document.getElementById('eb-title').textContent = `🚨 Emergency — ${e.bloodGroupRequired} needed`;
+    document.getElementById('eb-desc').textContent = `${e.patientName || 'Patient'} at ${e.hospitalName || e.city}`;
+  }
+
+  renderOverviewRequests(allRequests.slice(0,3));
+  allLocations = await api(`/donor/nearby-locations?lat=${userLat}&lng=${userLng}&r=25`).catch(()=>[]) || [];
+}
+
+// ── Availability ───────────────────────────────────────────────────────────────
+function setAvail(val) {
+  const toggle = document.getElementById('avail-toggle');
+  const label = document.getElementById('avail-label');
+  toggle.classList.toggle('on', val);
+  label.textContent = val ? 'Available' : 'Unavailable';
+  label.style.color = val ? '#16A34A' : '#475569';
+  if (profile) profile.isAvailable = val;
+}
+async function toggleAvailability() {
+  const newVal = !profile?.isAvailable;
+  const res = await apiPatch('/donor/availability', { isAvailable: newVal });
+  setAvail(res.isAvailable);
+  toast(res.isAvailable ? 'You are now available for donations' : 'You are marked as unavailable', res.isAvailable ? 'success' : 'info');
+}
+
+// ── Requests ───────────────────────────────────────────────────────────────────
+function filterReqs(urgency, btn) {
+  document.querySelectorAll('.filter-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const filtered = urgency === 'ALL' ? allRequests : allRequests.filter(r => r.urgencyLevel === urgency);
+  renderRequests(filtered);
+}
+
+function renderRequests(list) {
+  const el = document.getElementById('requests-list');
+  if (!list.length) { el.innerHTML = '<div class="empty"><div class="empty-icon">✅</div>No requests found</div>'; return; }
+  el.innerHTML = list.map(r => `
+    <div class="request-item">
+      <div class="ri-avatar ${r.urgencyLevel.toLowerCase()}">${r.urgencyLevel==='EMERGENCY'?'🚨':r.urgencyLevel==='URGENT'?'⚡':'📋'}</div>
+      <div class="ri-info">
+        <div class="ri-title">${r.bloodGroupRequired} — ${r.patientName || 'Patient'}</div>
+        <div class="ri-sub">${r.hospitalName || r.city} · ${r.unitsRequired} unit(s) needed</div>
+        ${r.notes ? `<div class="ri-sub" style="margin-top:4px;font-style:italic;">"${r.notes}"</div>` : ''}
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex-shrink:0;">
+        <span class="ri-badge badge-${r.urgencyLevel.toLowerCase()}">${r.urgencyLevel}</span>
+        <button class="btn-primary" style="padding:8px 16px;font-size:.8rem;" onclick="fulfill('${r.id}', this)">Fulfill</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderOverviewRequests(list) {
+  const el = document.getElementById('overview-requests');
+  if (!list.length) { el.innerHTML = '<div class="empty"><div class="empty-icon">✅</div>No open requests</div>'; return; }
+  el.innerHTML = list.map(r => `
+    <div class="request-item">
+      <div class="ri-avatar ${r.urgencyLevel.toLowerCase()}">${r.urgencyLevel==='EMERGENCY'?'🚨':r.urgencyLevel==='URGENT'?'⚡':'📋'}</div>
+      <div class="ri-info">
+        <div class="ri-title">${r.bloodGroupRequired} — ${r.patientName || 'Patient'}</div>
+        <div class="ri-sub">${r.hospitalName || r.city} · ${r.unitsRequired} unit(s)</div>
+      </div>
+      <span class="ri-badge badge-${r.urgencyLevel.toLowerCase()}">${r.urgencyLevel}</span>
+    </div>
+  `).join('');
+}
+
+async function fulfill(id, btn) {
+  btn.textContent = 'Confirming…'; btn.disabled = true;
+  const res = await apiPost('/donor/fulfill/'+id);
+  toast(res.message || 'Marked as fulfilled!', 'success');
+  allRequests = await api('/donor/open-requests').catch(()=>[]) || [];
+  renderRequests(allRequests);
+  document.getElementById('stat-open').textContent = allRequests.length;
+  document.getElementById('stat-donations').textContent = (parseInt(document.getElementById('stat-donations').textContent)||0)+1;
+}
+
+// ── Map ────────────────────────────────────────────────────────────────────────
+function initMap() {
+  map = L.map('donor-map').setView([userLat, userLng], 13);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution:'© OpenStreetMap' }).addTo(map);
+  L.marker([userLat, userLng], { icon: L.divIcon({ html:'<div style="background:#DC2626;color:#fff;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,.3)">📍</div>', className:'', iconAnchor:[14,14] }) }).addTo(map).bindPopup('You are here');
+  renderMapLocations(allLocations);
+  renderLocationList(allLocations);
+}
+
+function filterMap(type, btn) {
+  document.querySelectorAll('.filter-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const filtered = type === 'ALL' ? allLocations : allLocations.filter(l => l.type === type);
+  renderMapLocations(filtered);
+  renderLocationList(filtered);
+}
+
+function renderMapLocations(list) {
+  markers.forEach(m => map.removeLayer(m));
+  markers = [];
+  list.forEach(loc => {
+    const color = loc.type==='HOSPITAL' ? '#2563EB' : '#059669';
+    const icon = L.divIcon({ html:`<div style="background:${color};color:#fff;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:50%;font-size:14px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.2)" title="${loc.name}">${loc.type==='HOSPITAL'?'🏥':'🤝'}</div>`, className:'', iconAnchor:[14,14] });
+    const m = L.marker([loc.lat, loc.lng], {icon}).addTo(map);
+    m.bindPopup(`<strong>${loc.name}</strong><br>${loc.address||''}<br>📞 ${loc.phone||'N/A'}<br><small style="color:#888">${loc.additionalInfo||''}</small><br><strong style="color:#DC2626">${parseFloat(loc.distanceKm).toFixed(1)} km away</strong>`);
+    markers.push(m);
+  });
+}
+
+function renderLocationList(list) {
+  const el = document.getElementById('location-list');
+  if (!list.length) { el.innerHTML = '<div class="empty"><div class="empty-icon">📍</div>None found nearby</div>'; return; }
+  el.innerHTML = list.map(loc => `
+    <div class="request-item" onclick="map.setView([${loc.lat},${loc.lng}],16)" style="cursor:pointer;">
+      <div class="ri-avatar normal" style="font-size:1.5rem;">${loc.type==='HOSPITAL'?'🏥':'🤝'}</div>
+      <div class="ri-info">
+        <div class="ri-title">${loc.name}</div>
+        <div class="ri-sub">${loc.address||loc.city} · ${parseFloat(loc.distanceKm).toFixed(1)} km</div>
+        <div class="ri-sub">${loc.additionalInfo||''}</div>
+      </div>
+      <a href="tel:${loc.phone}" class="btn-ghost" style="font-size:.8rem;" onclick="event.stopPropagation()">📞</a>
+    </div>
+  `).join('');
+}
+
+// ── Profile ────────────────────────────────────────────────────────────────────
+function renderProfile() {
+  const el = document.getElementById('profile-body');
+  if (!profile) { el.innerHTML = '<div class="empty">No data</div>'; return; }
+  const row = (label, val) => `<div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid #E2E8F0"><span style="color:#475569;font-size:.875rem;">${label}</span><span style="font-weight:600;font-size:.875rem;">${val||'—'}</span></div>`;
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;gap:20px;margin-bottom:28px;padding-bottom:24px;border-bottom:1px solid #E2E8F0;">
+      <div style="width:64px;height:64px;border-radius:50%;background:#FEF2F2;display:flex;align-items:center;justify-content:center;font-size:1.8rem;">🩸</div>
+      <div><div style="font-size:1.2rem;font-weight:800;">${profile.name}</div><div style="color:#475569;font-size:.875rem;">${profile.email}</div></div>
+      <span class="ri-badge badge-${profile.isAvailable?'open':'fulfilled'}" style="margin-left:auto;">${profile.isAvailable?'Available':'Unavailable'}</span>
+    </div>
+    ${row('Blood Group', profile.bloodGroup)}
+    ${row('Phone', profile.phone)}
+    ${row('City', profile.city)}
+    ${row('Age', profile.age)}
+    ${row('Weight', profile.weight ? profile.weight+'kg' : '—')}
+    ${row('Gender', profile.gender)}
+    ${row('Total Donations', profile.totalDonations)}
+    ${row('Medical Conditions', profile.medicalConditions || 'None')}
+  `;
+}
+
+function logout() {
+  ['token','role','userId','name','email'].forEach(k => localStorage.removeItem('mm_'+k));
+  window.location.href = 'index.html';
+}
+
+loadAll();
+setInterval(() => api(`/donor/emergencies?lat=${userLat}&lng=${userLng}`).then(list => {
+  document.getElementById('stat-emerg').textContent = list.length;
+  if (list.length) document.getElementById('emergency-banner').classList.remove('hidden');
+}).catch(()=>{}), 30000);
+</script>
+</body>
+</html>

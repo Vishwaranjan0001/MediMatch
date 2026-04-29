@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NGO Dashboard — MediMatch</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav>
+  <a class="logo" href="index.html">🩸 MediMatch</a>
+  <div class="nav-links">
+    <span id="nav-name" style="color:#475569;font-size:.9rem;font-weight:500;padding:0 8px;"></span>
+    <button class="btn-ghost" onclick="logout()">Log out</button>
+  </div>
+</nav>
+
+<div class="dash-wrap">
+  <aside class="sidebar">
+    <div class="sidebar-logo">🩸 MediMatch</div>
+    <a class="sidebar-item active" onclick="showSection('overview')"><span class="sidebar-icon">🏠</span> Overview</a>
+    <a class="sidebar-item" onclick="showSection('requests')"><span class="sidebar-icon">📋</span> Open Requests</a>
+    <a class="sidebar-item" onclick="showSection('profile')"><span class="sidebar-icon">🤝</span> Camp Profile</a>
+    <div class="sidebar-bottom">
+      <a class="sidebar-item" onclick="logout()"><span class="sidebar-icon">🚪</span> Log out</a>
+    </div>
+  </aside>
+
+  <main class="main-content">
+
+    <!-- ── OVERVIEW ── -->
+    <div id="sec-overview">
+      <div class="page-header">
+        <div class="page-title" id="ngo-name">Camp Dashboard</div>
+        <div class="page-sub">Manage your donation camp and view blood requests</div>
+      </div>
+
+      <div class="avail-row">
+        <div>
+          <div class="avail-status">Camp Status</div>
+          <div style="font-size:.85rem;color:#475569;margin-top:2px;">Toggle to show your camp as active to donors</div>
+        </div>
+        <div class="toggle-switch" style="margin-left:auto;">
+          <div class="toggle" id="camp-toggle" onclick="toggleStatus()"></div>
+          <span class="switch-label" id="camp-label">—</span>
+        </div>
+      </div>
+
+      <div class="stats-row">
+        <div class="card">
+          <div class="card-title">Open Requests</div>
+          <div class="card-value" id="stat-open">—</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Emergencies</div>
+          <div class="card-value" style="color:#DC2626" id="stat-emerg">—</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Camp Type</div>
+          <div class="card-value" style="font-size:1.2rem;" id="stat-type">—</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Upcoming Camp</div>
+          <div class="card-value" style="font-size:1rem;" id="stat-date">—</div>
+        </div>
+      </div>
+
+      <div class="section-card">
+        <div class="section-head">
+          <h3>Priority Requests</h3>
+          <button class="btn-ghost" style="font-size:.85rem;" onclick="showSection('requests')">See all →</button>
+        </div>
+        <div class="section-body" id="overview-requests">
+          <div class="empty"><div class="empty-icon">⏳</div>Loading…</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── REQUESTS ── -->
+    <div id="sec-requests" class="hidden">
+      <div class="page-header">
+        <div class="page-title">Open Blood Requests</div>
+        <div class="page-sub">Sorted by urgency — help connect donors to these needs</div>
+      </div>
+      <div class="filter-tabs">
+        <button class="filter-tab active" onclick="filterReqs('ALL',this)">All</button>
+        <button class="filter-tab" onclick="filterReqs('EMERGENCY',this)">🚨 Emergency</button>
+        <button class="filter-tab" onclick="filterReqs('URGENT',this)">⚡ Urgent</button>
+        <button class="filter-tab" onclick="filterReqs('NORMAL',this)">📋 Normal</button>
+      </div>
+      <div class="section-card">
+        <div class="section-body" id="requests-list">
+          <div class="empty"><div class="empty-icon">⏳</div>Loading…</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PROFILE ── -->
+    <div id="sec-profile" class="hidden">
+      <div class="page-header"><div class="page-title">Camp Profile</div></div>
+      <div class="section-card" style="max-width:640px;">
+        <div class="section-body" id="profile-body">
+          <div class="empty"><div class="empty-icon">⏳</div>Loading…</div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<div id="toast-area"></div>
+<script>
+const BASE = 'http://localhost:8080/api';
+const token = localStorage.getItem('mm_token');
+if (!token || localStorage.getItem('mm_role') !== 'NGO') { window.location.href = 'index.html'; }
+document.getElementById('nav-name').textContent = localStorage.getItem('mm_name') || '';
+
+let profile = null, allRequests = [];
+
+function toast(msg, type='info') {
+  const el = document.createElement('div');
+  el.className = 'toast toast-'+type; el.textContent = msg;
+  document.getElementById('toast-area').appendChild(el);
+  setTimeout(()=>{ el.style.opacity='0'; setTimeout(()=>el.remove(),400); },3000);
+}
+
+async function api(path, method='GET', body=null) {
+  const opts = { method, headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'} };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(BASE+path, opts);
+  return res.json();
+}
+
+function showSection(id) {
+  ['overview','requests','profile'].forEach(s =>
+    document.getElementById('sec-'+s).classList.toggle('hidden', s!==id));
+  document.querySelectorAll('.sidebar-item').forEach((el,i) =>
+    el.classList.toggle('active', ['overview','requests','profile'][i]===id));
+  if (id==='requests') renderRequests(allRequests);
+  if (id==='profile') renderProfile();
+}
+
+async function loadAll() {
+  profile = await api('/ngo/profile').catch(()=>null);
+  if (profile) {
+    document.getElementById('ngo-name').textContent = profile.name || 'Camp Dashboard';
+    document.getElementById('stat-type').textContent = profile.campType || '—';
+    document.getElementById('stat-date').textContent = profile.upcomingCampDate || 'Not set';
+    setCampStatus(profile.isCurrentlyActive);
+  }
+  allRequests = await api('/ngo/requests').catch(()=>[]) || [];
+  document.getElementById('stat-open').textContent = allRequests.length;
+  document.getElementById('stat-emerg').textContent = allRequests.filter(r=>r.urgencyLevel==='EMERGENCY').length;
+  renderOverviewRequests(allRequests.slice(0,5));
+}
+
+function setCampStatus(val) {
+  const toggle = document.getElementById('camp-toggle');
+  const label = document.getElementById('camp-label');
+  toggle.classList.toggle('on', val);
+  label.textContent = val ? 'Active' : 'Inactive';
+  label.style.color = val ? '#16A34A' : '#475569';
+  if (profile) profile.isCurrentlyActive = val;
+}
+
+async function toggleStatus() {
+  const newVal = !profile?.isCurrentlyActive;
+  const res = await api('/ngo/status', 'PATCH', { isCurrentlyActive: newVal });
+  setCampStatus(res.isCurrentlyActive);
+  toast(res.isCurrentlyActive ? 'Camp is now active and visible to donors' : 'Camp marked as inactive', 'success');
+}
+
+function filterReqs(urgency, btn) {
+  document.querySelectorAll('.filter-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  const filtered = urgency==='ALL' ? allRequests : allRequests.filter(r=>r.urgencyLevel===urgency);
+  renderRequests(filtered);
+}
+
+function renderRequests(list) {
+  const el = document.getElementById('requests-list');
+  if (!list.length) { el.innerHTML = '<div class="empty"><div class="empty-icon">✅</div>No open requests</div>'; return; }
+  el.innerHTML = list.map(r => `
+    <div class="request-item">
+      <div class="ri-avatar ${(r.urgencyLevel||'normal').toLowerCase()}">${r.urgencyLevel==='EMERGENCY'?'🚨':r.urgencyLevel==='URGENT'?'⚡':'📋'}</div>
+      <div class="ri-info">
+        <div class="ri-title">${r.bloodGroupRequired} — ${r.patientName||'Patient'} · ${r.unitsRequired} unit(s)</div>
+        <div class="ri-sub">${r.hospitalName||''} · ${r.city||''}</div>
+        ${r.notes ? `<div class="ri-sub" style="font-style:italic;">"${r.notes}"</div>` : ''}
+        <div class="ri-sub">${new Date(r.createdAt).toLocaleString()}</div>
+      </div>
+      <span class="ri-badge badge-${(r.urgencyLevel||'normal').toLowerCase()}">${r.urgencyLevel}</span>
+    </div>
+  `).join('');
+}
+
+function renderOverviewRequests(list) {
+  const el = document.getElementById('overview-requests');
+  if (!list.length) { el.innerHTML = '<div class="empty"><div class="empty-icon">✅</div>No open requests</div>'; return; }
+  el.innerHTML = list.map(r => `
+    <div class="request-item">
+      <div class="ri-avatar ${(r.urgencyLevel||'normal').toLowerCase()}">${r.urgencyLevel==='EMERGENCY'?'🚨':r.urgencyLevel==='URGENT'?'⚡':'📋'}</div>
+      <div class="ri-info">
+        <div class="ri-title">${r.bloodGroupRequired} — ${r.patientName||'Patient'}</div>
+        <div class="ri-sub">${r.city||''} · ${r.unitsRequired} unit(s)</div>
+      </div>
+      <span class="ri-badge badge-${(r.urgencyLevel||'normal').toLowerCase()}">${r.urgencyLevel}</span>
+    </div>
+  `).join('');
+}
+
+function renderProfile() {
+  const el = document.getElementById('profile-body');
+  if (!profile) { el.innerHTML = '<div class="empty">No data</div>'; return; }
+  const row = (l,v) => `<div style="display:flex;justify-content:space-between;padding:12px 0;border-bottom:1px solid #E2E8F0"><span style="color:#475569;font-size:.875rem;">${l}</span><span style="font-weight:600;font-size:.875rem;">${v||'—'}</span></div>`;
+  el.innerHTML = `
+    <div style="display:flex;align-items:center;gap:20px;margin-bottom:28px;padding-bottom:24px;border-bottom:1px solid #E2E8F0;">
+      <div style="width:64px;height:64px;border-radius:50%;background:#ECFDF5;display:flex;align-items:center;justify-content:center;font-size:1.8rem;">🤝</div>
+      <div>
+        <div style="font-size:1.2rem;font-weight:800;">${profile.name}</div>
+        <div style="color:#475569;font-size:.875rem;">${profile.email}</div>
+      </div>
+      <span class="ri-badge ${profile.isCurrentlyActive?'badge-open':'badge-fulfilled'}" style="margin-left:auto;">${profile.isCurrentlyActive?'Active':'Inactive'}</span>
+    </div>
+    ${row('Phone', profile.phone)}
+    ${row('City', profile.city)}
+    ${row('Address', profile.address)}
+    ${row('Organizer', profile.organizerName)}
+    ${row('Registration No.', profile.registrationNumber)}
+    ${row('Camp Type', profile.campType)}
+    ${row('Schedule', profile.campSchedule)}
+    ${row('Upcoming Camp Date', profile.upcomingCampDate)}
+    ${row('Target Blood Groups', (profile.targetBloodGroups||[]).join(', ') || 'All groups')}
+  `;
+}
+
+function logout() {
+  ['token','role','userId','name','email'].forEach(k=>localStorage.removeItem('mm_'+k));
+  window.location.href = 'index.html';
+}
+
+loadAll();
+</script>
+</body>
+</html>

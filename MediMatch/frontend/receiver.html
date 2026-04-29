@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Receiver Dashboard — MediMatch</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+</head>
+<body>
+
+<nav>
+  <a class="logo" href="index.html">🩸 MediMatch</a>
+  <div class="nav-links">
+    <span id="nav-name" style="color:#475569;font-size:.9rem;font-weight:500;padding:0 8px;"></span>
+    <button class="btn-ghost" onclick="logout()">Log out</button>
+  </div>
+</nav>
+
+<div class="dash-wrap">
+  <aside class="sidebar">
+    <div class="sidebar-logo">🩸 MediMatch</div>
+    <a class="sidebar-item active" onclick="showSection('overview')"><span class="sidebar-icon">🏠</span> Overview</a>
+    <a class="sidebar-item" onclick="showSection('request')"><span class="sidebar-icon">📋</span> New Request</a>
+    <a class="sidebar-item" onclick="showSection('donors')"><span class="sidebar-icon">🩸</span> Find Donors</a>
+    <a class="sidebar-item" onclick="showSection('history')"><span class="sidebar-icon">📂</span> My Requests</a>
+    <div class="sidebar-bottom">
+      <a class="sidebar-item" onclick="logout()"><span class="sidebar-icon">🚪</span> Log out</a>
+    </div>
+  </aside>
+
+  <main class="main-content">
+
+    <!-- ── OVERVIEW ── -->
+    <div id="sec-overview">
+      <div class="page-header">
+        <div class="page-title">Welcome, <span id="receiver-name">—</span></div>
+        <div class="page-sub">Find blood donors and manage your requests</div>
+      </div>
+
+      <div class="stats-row">
+        <div class="card">
+          <div class="card-title">Blood Needed</div>
+          <div class="card-value" id="stat-blood">—</div>
+        </div>
+        <div class="card">
+          <div class="card-title">My Requests</div>
+          <div class="card-value" id="stat-requests">0</div>
+        </div>
+        <div class="card">
+          <div class="card-title">Open Requests</div>
+          <div class="card-value" id="stat-open">—</div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+        <div class="section-card" style="cursor:pointer;" onclick="showSection('request')">
+          <div class="section-body" style="text-align:center;padding:40px 24px;">
+            <div style="font-size:3rem;margin-bottom:12px;">📋</div>
+            <h3 style="margin-bottom:8px;">Post a Request</h3>
+            <p style="color:#475569;font-size:.875rem;">Request blood for a patient. Our system matches compatible donors instantly.</p>
+            <button class="btn-primary" style="margin-top:20px;">Post Request</button>
+          </div>
+        </div>
+        <div class="section-card" style="cursor:pointer;" onclick="triggerEmergencyModal()">
+          <div class="section-body" style="text-align:center;padding:40px 24px;">
+            <div style="font-size:3rem;margin-bottom:12px;">🚨</div>
+            <h3 style="margin-bottom:8px;color:#DC2626;">Emergency Alert</h3>
+            <p style="color:#475569;font-size:.875rem;">Instantly email all compatible donors within 50 km. Use for life-threatening situations.</p>
+            <button class="btn-primary" style="margin-top:20px;background:#B91C1C;">Trigger Emergency</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:20px;" class="section-card">
+        <div class="section-head"><h3>My Recent Requests</h3></div>
+        <div class="section-body" id="overview-history">
+          <div class="empty"><div class="empty-icon">📋</div>No requests yet</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── REQUEST FORM ── -->
+    <div id="sec-request" class="hidden">
+      <div class="page-header">
+        <div class="page-title">Post Blood Request</div>
+        <div class="page-sub">Fill in the details and we'll match compatible donors</div>
+      </div>
+      <div class="section-card" style="max-width:640px;">
+        <div class="section-body">
+          <div class="success-msg hidden" id="req-success"></div>
+          <div class="error hidden" id="req-err"></div>
+          <div class="form-inline">
+            <div>
+              <div class="form-label">Urgency Level</div>
+              <div style="display:flex;gap:10px;">
+                <label style="margin:0;display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="radio" name="urgency" value="NORMAL" checked> Normal</label>
+                <label style="margin:0;display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="radio" name="urgency" value="URGENT"> Urgent</label>
+                <label style="margin:0;display:flex;align-items:center;gap:6px;cursor:pointer;"><input type="radio" name="urgency" value="EMERGENCY"> 🚨 Emergency</label>
+              </div>
+            </div>
+            <div class="form-row">
+              <div>
+                <div class="form-label">Blood Group Required</div>
+                <select id="req-blood">
+                  <option value="">Select…</option>
+                  <option>A+</option><option>A-</option><option>B+</option><option>B-</option>
+                  <option>AB+</option><option>AB-</option><option>O+</option><option>O-</option>
+                </select>
+              </div>
+              <div>
+                <div class="form-label">Units Required</div>
+                <input type="number" id="req-units" placeholder="e.g. 2" min="1" value="1">
+              </div>
+            </div>
+            <div>
+              <div class="form-label">Patient Name</div>
+              <input type="text" id="req-patient" placeholder="Full name of patient">
+            </div>
+            <div>
+              <div class="form-label">Hospital Name</div>
+              <input type="text" id="req-hospital" placeholder="Hospital where blood is needed">
+            </div>
+            <div>
+              <div class="form-label">City</div>
+              <input type="text" id="req-city" placeholder="City">
+            </div>
+            <div class="form-row">
+              <div>
+                <div class="form-label">Latitude</div>
+                <input type="number" id="req-lat" step="any" placeholder="Auto-detected">
+              </div>
+              <div>
+                <div class="form-label">Longitude</div>
+                <input type="number" id="req-lng" step="any" placeholder="Auto-detected">
+              </div>
+            </div>
+            <div>
+              <div class="form-label">Additional Notes</div>
+              <textarea id="req-notes" placeholder="Any additional information…"></textarea>
+            </div>
+            <button class="btn-primary" style="padding:14px;" id="req-btn" onclick="submitRequest()">Post Request</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── FIND DONORS ── -->
+    <div id="sec-donors" class="hidden">
+      <div class="page-header">
+        <div class="page-title">Find Nearby Donors</div>
+        <div class="page-sub">Compatible donors sorted by distance</div>
+      </div>
+      <div class="section-card" style="margin-bottom:20px;">
+        <div class="section-body">
+          <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+            <div style="flex:1;min-width:140px;">
+              <div class="form-label">Blood Group Needed</div>
+              <select id="search-blood">
+                <option value="">Select…</option>
+                <option>A+</option><option>A-</option><option>B+</option><option>B-</option>
+                <option>AB+</option><option>AB-</option><option>O+</option><option>O-</option>
+              </select>
+            </div>
+            <div style="flex:0 0 120px;">
+              <div class="form-label">Radius (km)</div>
+              <input type="number" id="search-radius" value="20" min="1" max="100">
+            </div>
+            <button class="btn-primary" style="padding:12px 24px;" onclick="searchDonors()">Search</button>
+          </div>
+        </div>
+      </div>
+      <div class="grid-2">
+        <div class="map-box" id="receiver-map"></div>
+        <div class="section-card" style="max-height:400px;overflow-y:auto;">
+          <div class="section-body" id="donor-list">
+            <div class="empty"><div class="empty-icon">🔍</div>Search to find donors</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── HISTORY ── -->
+    <div id="sec-history" class="hidden">
+      <div class="page-header">
+        <div class="page-title">My Requests</div>
+      </div>
+      <div class="section-card">
+        <div class="section-body" id="history-list">
+          <div class="empty"><div class="empty-icon">⏳</div>Loading…</div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- Emergency Modal -->
+<div class="overlay hidden" id="emerg-overlay" onclick="closeEmergModal()"></div>
+<div class="modal hidden" id="emerg-modal" style="max-width:460px;">
+  <button class="modal-close" onclick="closeEmergModal()">✕</button>
+  <div style="font-size:2.5rem;text-align:center;margin-bottom:12px;">🚨</div>
+  <h2 style="text-align:center;color:#DC2626;">Emergency Alert</h2>
+  <p style="color:#475569;text-align:center;font-size:.9rem;margin:12px 0 24px;">This will immediately email all compatible available donors within 50 km.</p>
+  <div class="error hidden" id="emerg-err"></div>
+  <div class="form-inline">
+    <div class="form-row">
+      <div><div class="form-label">Blood Group</div>
+        <select id="emerg-blood">
+          <option>A+</option><option>A-</option><option>B+</option><option>B-</option>
+          <option>AB+</option><option>AB-</option><option>O+</option><option>O-</option>
+        </select>
+      </div>
+      <div><div class="form-label">Units</div><input type="number" id="emerg-units" value="1" min="1"></div>
+    </div>
+    <div><div class="form-label">Patient Name</div><input type="text" id="emerg-patient" placeholder="Patient name"></div>
+    <div><div class="form-label">Hospital</div><input type="text" id="emerg-hospital" placeholder="Hospital name"></div>
+    <div><div class="form-label">City</div><input type="text" id="emerg-city" placeholder="City"></div>
+    <button class="btn-primary full" style="background:#B91C1C;" id="emerg-btn" onclick="sendEmergency()">🚨 Send Emergency Alert</button>
+  </div>
+</div>
+
+<div id="toast-area"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const BASE = 'http://localhost:8080/api';
+const token = localStorage.getItem('mm_token');
+if (!token || localStorage.getItem('mm_role') !== 'RECEIVER') { window.location.href = 'index.html'; }
+
+document.getElementById('nav-name').textContent = localStorage.getItem('mm_name') || '';
+document.getElementById('receiver-name').textContent = (localStorage.getItem('mm_name')||'').split(' ')[0];
+
+let userLat = 30.3165, userLng = 78.0322, receiverMap = null, donorMarkers = [];
+
+function toast(msg, type='info') {
+  const el = document.createElement('div');
+  el.className = 'toast toast-'+type; el.textContent = msg;
+  document.getElementById('toast-area').appendChild(el);
+  setTimeout(()=>{ el.style.opacity='0'; setTimeout(()=>el.remove(),400); },3000);
+}
+
+async function api(path, method='GET', body=null) {
+  const opts = { method, headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'} };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(BASE+path, opts);
+  return res.json();
+}
+
+function showSection(id) {
+  ['overview','request','donors','history'].forEach(s =>
+    document.getElementById('sec-'+s).classList.toggle('hidden', s!==id));
+  document.querySelectorAll('.sidebar-item').forEach((el,i) =>
+    el.classList.toggle('active', ['overview','request','donors','history'][i]===id));
+  if (id==='donors' && !receiverMap) initReceiverMap();
+  if (id==='history') loadHistory();
+}
+
+async function loadAll() {
+  const profile = await api('/receiver/profile').catch(()=>null);
+  if (profile) {
+    // Use profile coordinates if available
+    if (profile.latitude && profile.longitude) {
+      userLat = profile.latitude;
+      userLng = profile.longitude;
+    }
+    document.getElementById('stat-blood').textContent = profile.bloodGroupRequired || '—';
+    const bloodEl = document.getElementById('emerg-blood');
+    if (bloodEl && profile.bloodGroupRequired) bloodEl.value = profile.bloodGroupRequired;
+    const searchBlood = document.getElementById('search-blood');
+    if (searchBlood && profile.bloodGroupRequired) searchBlood.value = profile.bloodGroupRequired;
+    
+    // Update form fields with coordinates
+    const latEl = document.getElementById('req-lat'), lngEl = document.getElementById('req-lng');
+    if (latEl) { latEl.value = userLat; lngEl.value = userLng; }
+  }
+  const myReqs = await api('/receiver/my-requests').catch(()=>[]) || [];
+  document.getElementById('stat-requests').textContent = myReqs.length;
+  const open = myReqs.filter(r => r.status === 'OPEN');
+  document.getElementById('stat-open').textContent = open.length;
+  renderHistoryList(myReqs.slice(0,3), 'overview-history');
+}
+
+async function loadHistory() {
+  const list = await api('/receiver/my-requests').catch(()=>[]) || [];
+  renderHistoryList(list, 'history-list');
+}
+
+function renderHistoryList(list, elId) {
+  const el = document.getElementById(elId);
+  if (!list.length) { el.innerHTML = '<div class="empty"><div class="empty-icon">📋</div>No requests yet</div>'; return; }
+  el.innerHTML = list.map(r => `
+    <div class="request-item">
+      <div class="ri-avatar ${(r.urgencyLevel||'normal').toLowerCase()}">${r.urgencyLevel==='EMERGENCY'?'🚨':r.urgencyLevel==='URGENT'?'⚡':'📋'}</div>
+      <div class="ri-info">
+        <div class="ri-title">${r.bloodGroupRequired} — ${r.patientName||'Patient'}</div>
+        <div class="ri-sub">${r.hospitalName||r.city} · ${r.unitsRequired} unit(s)</div>
+        <div class="ri-sub" style="margin-top:2px;">${new Date(r.createdAt).toLocaleDateString()}</div>
+      </div>
+      <span class="ri-badge badge-${(r.status||'open').toLowerCase()}">${r.status}</span>
+    </div>
+  `).join('');
+}
+
+async function submitRequest() {
+  const btn = document.getElementById('req-btn');
+  btn.textContent = 'Posting…'; btn.disabled = true;
+  const urgency = document.querySelector('input[name="urgency"]:checked')?.value || 'NORMAL';
+  const body = {
+    bloodGroupRequired: document.getElementById('req-blood').value,
+    unitsRequired: parseInt(document.getElementById('req-units').value) || 1,
+    patientName: document.getElementById('req-patient').value,
+    hospitalName: document.getElementById('req-hospital').value,
+    city: document.getElementById('req-city').value,
+    notes: document.getElementById('req-notes').value,
+    urgencyLevel: urgency,
+    latitude: parseFloat(document.getElementById('req-lat').value) || userLat,
+    longitude: parseFloat(document.getElementById('req-lng').value) || userLng
+  };
+  try {
+    await api('/receiver/request', 'POST', body);
+    const s = document.getElementById('req-success');
+    s.textContent = '✅ Request posted! Compatible donors have been notified.';
+    s.classList.remove('hidden');
+    toast('Blood request posted successfully', 'success');
+    setTimeout(() => s.classList.add('hidden'), 4000);
+  } catch(e) {
+    document.getElementById('req-err').textContent = e.message;
+    document.getElementById('req-err').classList.remove('hidden');
+  }
+  btn.textContent = 'Post Request'; btn.disabled = false;
+}
+
+function triggerEmergencyModal() {
+  document.getElementById('emerg-overlay').classList.remove('hidden');
+  document.getElementById('emerg-modal').classList.remove('hidden');
+}
+function closeEmergModal() {
+  document.getElementById('emerg-overlay').classList.add('hidden');
+  document.getElementById('emerg-modal').classList.add('hidden');
+}
+
+async function sendEmergency() {
+  const btn = document.getElementById('emerg-btn');
+  btn.textContent = 'Sending…'; btn.disabled = true;
+  const body = {
+    bloodGroupRequired: document.getElementById('emerg-blood').value,
+    unitsRequired: parseInt(document.getElementById('emerg-units').value) || 1,
+    patientName: document.getElementById('emerg-patient').value,
+    hospitalName: document.getElementById('emerg-hospital').value,
+    city: document.getElementById('emerg-city').value,
+    urgencyLevel: 'EMERGENCY',
+    latitude: userLat, longitude: userLng
+  };
+  try {
+    const res = await api('/receiver/emergency', 'POST', body);
+    closeEmergModal();
+    toast(res.message || 'Emergency alert sent!', 'success');
+  } catch(e) {
+    document.getElementById('emerg-err').textContent = e.message;
+    document.getElementById('emerg-err').classList.remove('hidden');
+  }
+  btn.textContent = '🚨 Send Emergency Alert'; btn.disabled = false;
+}
+
+function initReceiverMap() {
+  receiverMap = L.map('receiver-map').setView([userLat, userLng], 13);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution:'© OpenStreetMap' }).addTo(receiverMap);
+  L.marker([userLat, userLng], { icon: L.divIcon({ html:'<div style="background:#DC2626;color:#fff;border-radius:50%;width:28px;height:28px;display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 2px 8px rgba(0,0,0,.3)">📍</div>', className:'', iconAnchor:[14,14] }) }).addTo(receiverMap);
+}
+
+async function searchDonors() {
+  const blood = document.getElementById('search-blood').value.trim();
+  const radius = document.getElementById('search-radius').value || 20;
+  console.log('[searchDonors] Searching for blood group:', blood, 'radius:', radius);
+  if (!blood) { toast('Please select a blood group', 'error'); return; }
+  const encodedBlood = encodeURIComponent(blood);
+  const list = await api(`/receiver/nearby-donors?lat=${userLat}&lng=${userLng}&bloodGroup=${encodedBlood}&radius=${radius}`).catch(()=>[]) || [];
+
+  donorMarkers.forEach(m => receiverMap.removeLayer(m));
+  donorMarkers = [];
+  list.forEach(d => {
+    const icon = L.divIcon({ html:`<div style="background:#DC2626;color:#fff;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:50%;font-size:14px;font-weight:700;box-shadow:0 2px 8px rgba(0,0,0,.2)">🩸</div>`, className:'', iconAnchor:[14,14] });
+    const donorLat = d.latitude != null ? d.latitude : userLat;
+    const donorLng = d.longitude != null ? d.longitude : userLng;
+    const m = L.marker([donorLat, donorLng], {icon}).addTo(receiverMap);
+    m.bindPopup(`<strong>${d.name}</strong><br>🩸 ${d.bloodGroup}<br>📞 ${d.phone||'N/A'}<br><strong style="color:#DC2626">${d.distanceText||''}</strong>`);
+    donorMarkers.push(m);
+  });
+
+  const el = document.getElementById('donor-list');
+  if (!list.length) { el.innerHTML = '<div class="empty"><div class="empty-icon">🔍</div>No donors found nearby</div>'; return; }
+  el.innerHTML = list.map(d => `
+    <div class="request-item">
+      <div class="ri-avatar emergency" style="font-weight:800;font-size:.9rem;">${d.bloodGroup}</div>
+      <div class="ri-info">
+        <div class="ri-title">${d.name}</div>
+        <div class="ri-sub">${d.city} · ${d.distanceText||''}</div>
+      </div>
+      <a href="tel:${d.phone}" class="btn-ghost" style="font-size:.8rem;">📞 Call</a>
+    </div>
+  `).join('');
+}
+
+function logout() {
+  ['token','role','userId','name','email'].forEach(k => localStorage.removeItem('mm_'+k));
+  window.location.href = 'index.html';
+}
+
+loadAll();
+</script>
+</body>
+</html>
