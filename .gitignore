@@ -14,3 +14,9 @@
 *.settings/
 .DS_Store
 Thumbs.db
+
+# Generated builds and local credentials
+**/target/
+**/.env
+**/.env.*
+!**/.env.example
