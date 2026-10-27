@@ -29,8 +29,8 @@ A Java and web application prototype connecting donors, recipients, and hospital
 Requires Java 17, Maven, and MongoDB. Review the backend configuration in `MediMatch/backend/src/application.properties` and supply your own development database and email settings through your local environment. Set JWT_SECRET to a private signing secret, plus SMTP_USER and SMTP_PASS for email. The defaults do not include credentials.
 
 ```bash
-git clone https://github.com/Vishwaranjan0001/MediMatchfinL.git
-cd MediMatchfinL/MediMatch/backend
+git clone https://github.com/Vishwaranjan0001/MediMatch.git
+cd MediMatch/MediMatch/backend
 mvn spring-boot:run
 ```
 
